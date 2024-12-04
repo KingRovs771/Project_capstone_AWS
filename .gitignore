@@ -1,5 +1,0 @@
-.env
-.gitignore
-server_uptime_log.txt
-/venv
-/_pycache_
