@@ -22,6 +22,8 @@ app.config.from_object('config.Config')
 
 
 dynamodb = boto3.resource('dynamodb',region_name='us-east-1')
+user_access_table = dynamodb.Table('user_access')
+
 
 @app.route('/')
 def index():
@@ -55,11 +57,11 @@ def register():
         
         table.put_item(
                 Item={
-        'email': email,
-        'username': username,
-        'password': password
-            }
-        )
+                    'email': email,
+                    'username': username,
+                    'password': password
+                }
+            )
         msg = "Registration Complete. Please Login to your account !"
     
         return redirect (url_for('login'))
@@ -86,11 +88,14 @@ def login():
             # Jika username ditemukan, ambil email dan password yang tersimpan
             stored_email = items[0]['email']
             stored_password = items[0]['password']
+            stored_username = items[0]['username']
             print(stored_password)  # Hapus ini di produksi untuk keamanan
             
             # Validasi password
             if password == stored_password:
-                return redirect(url_for('index', name=username))  # Redirect dengan username
+                session['username'] = username
+                session['email'] = stored_email
+                return redirect(url_for('index'))  # Redirect dengan username
             
         # Jika login gagal
         return render_template("login.html", error="Username atau password salah.")
@@ -101,7 +106,8 @@ def login():
 
 @app.route('/index')
 def home():
-    return render_template('index.html')
+    username=session.get("username")
+    return render_template("index.html", username=username)
 
 # #buat direktori penyimpanan file
 # os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -176,6 +182,31 @@ def load_chatbot_data():
 #ngambil data dari json
 chatbot_data = load_chatbot_data()
 
+def check_and_update_access(user_id, feature):
+    response = user_access_table.get_item(Key={'username': user_id})
+    if 'Item' in response:
+        access_info = response['Item']
+    else:
+        access_info = {'username': user_id, 'chatbot_access' : 0, 'detection_access' : 0}
+    
+    if feature=='chatbot':
+        if access_info['chatbot_access'] >= 3:
+            return False
+        access_info['chatbot_access'] +=1
+    elif feature=='detection' :
+        if access_info['detection_access'] >= 3:
+            return False
+        access_info['detection_access'] += 1
+
+    user_access_table.put_item(Item=access_info)
+    return True
+
+def get_answer(question, data):
+    for item in data["data"]:
+        if item['question'].lower() == question.lower():
+            return item["answer"]
+    return "I'm Sorry, I dont't understand that question."
+
 
 @app.route('/contact', methods=['GET', 'POST'])
 def contact():
@@ -223,44 +254,63 @@ def contact():
 
 @app.route('/chatbot', methods=['GET', 'POST'])
 def chatbot():
-    user_logged_in = 'user_id' in session  # Cek apakah user login
-    user_id = session.get('user_id', 'guest')  # Default user_id untuk tamu
-    guest_uploads, guest_chatbot_interactions = get_guest_usage()  # Ambil batasan tamu
+    # user_logged_in = 'user_id' in session  # Cek apakah user login
+    # user_id = session.get('user_id', 'guest')  # Default user_id untuk tamu
+    # guest_uploads, guest_chatbot_interactions = get_guest_usage()  # Ambil batasan tamu
 
-    if request.method == 'POST':
+    if 'username' in session : 
+        username =session['username']
+        access_granted = True
+    else :
+        if 'guest_id' not in session:
+            session['guest_id'] = str(uuid.uuid4())
+        username =session['guest_id']
+        access_granted = check_and_update_access(username, 'chatbot')
+    
+    if not access_granted : 
+        if request.method == 'POST':
+            return jsonify({"message": "Anda telah mencapai batas penggunaan. Silakan login untuk melanjutkan."}), 403
+        return render_template("login.html", username=username)
+    
+    # if request.method == 'POST':
         # Cek batas interaksi chatbot untuk tamu
-        if not user_logged_in and guest_chatbot_interactions >= 3:
-            flash('Anda telah mencapai batas penggunaan chatbot. Silakan login untuk melanjutkan.', 'warning')
-            return redirect(url_for('login'))
+        # if not user_logged_in and guest_chatbot_interactions >= 3:
+        #     flash('Anda telah mencapai batas penggunaan chatbot. Silakan login untuk melanjutkan.', 'warning')
+        #     return redirect(url_for('login'))
 
         # Ambil pesan pengguna dari form
-        user_message = request.form['message'].strip()
-        if user_message:
-            # Cari respons chatbot
-            response = chatbot_data.get(user_message.lower(), "Bot tidak mengerti pertanyaan Anda.")
+        # user_message = request.form['message'].strip()
+        # if user_message:
+        #     # Cari respons chatbot
+        #     response = chatbot_data.get(user_message.lower(), "Bot tidak mengerti pertanyaan Anda.")
             
-            # Simpan log interaksi ke tabel DynamoDB
-            chatbot_table = dynamodb.Table('chatbot')
-            chatbot_table.put_item(
-                Item={
-                    'chatId': str(uuid.uuid4()),  # ID unik untuk setiap log
-                    'userId': user_id,           # ID pengguna (guest jika tamu)
-                    'message': user_message,     # Pesan pengguna
-                    'response': response,        # Respons chatbot
-                    'timestamp': int(time.time())  # Waktu interaksi dalam detik
-                }
-            )
+        #     # Simpan log interaksi ke tabel DynamoDB
+        #     chatbot_table = dynamodb.Table('chatbot')
+        #     chatbot_table.put_item(
+        #         Item={
+        #             'chatId': str(uuid.uuid4()),  # ID unik untuk setiap log
+        #             'userId': username,           # ID pengguna (guest jika tamu)
+        #             'message': user_message,     # Pesan pengguna
+        #             'response': response,        # Respons chatbot
+        #             'timestamp': int(time.time())  # Waktu interaksi dalam detik
+        #         }
+        #     )
 
             # Tambahkan interaksi ke tamu jika belum login
-            if not user_logged_in:
-                guest_chatbot_interactions += 1
-                update_guest_usage(guest_uploads, guest_chatbot_interactions)
+            # if not user_logged_in:
+            #     guest_chatbot_interactions += 1
+            #     update_guest_usage(guest_uploads, guest_chatbot_interactions)
 
             # Kembalikan respons chatbot
-            return jsonify({'response': response})
+            # return jsonify({'response': response})
 
+    if request.method == 'POST':
+        question = request.form['message']
+        data = load_chatbot_data()
+        answer = get_answer(question, data)
+        return render_template("chatbot.html", useranme=username, answer=answer)
     # Render halaman chatbot
-    return render_template('chatbot.html', user_logged_in=user_logged_in)
+    return render_template('chatbot.html', username=username)
 
 
 @app.route('/get_response/<message>')

@@ -1,10 +1,11 @@
-{% extends "layout.html" %}
-
-{% block title %}Chatbot - Melanoma Scan{% endblock %}
-
-{% block content %}
+{% extends "layout.html" %} {% block title %}Chatbot - Melanoma Scan{% endblock
+%} {% block content %}
 <!-- Chatbot -->
-<div class="chatbot-container">
+<div
+  class="chatbot-container"
+  id="chatbot_wrapp"
+  data-access-granted="{{access_granted}}"
+>
   <div class="chatbox">
     <div class="chatbox-header">Chatbot</div>
     <div class="chatbox-body" id="chatbox-body">
@@ -13,101 +14,143 @@
       </div>
     </div>
     <div class="chatbox-footer">
-      <input type="text" id="user-input" placeholder="Ketikkan pesan Anda di sini..." />
+      <input
+        type="text"
+        id="user-input"
+        placeholder="Ketikkan pesan Anda di sini..."
+      />
       <button id="send-button"><i class="fas fa-paper-plane"></i></button>
     </div>
   </div>
 </div>
 
-<script>
-  const userInput = document.getElementById("user-input");
-  const sendButton = document.getElementById("send-button");
-  const chatboxBody = document.getElementById("chatbox-body");
+<!-- Modal Pop-up -->
+<div id="myModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <p>
+      Anda telah mencapai batas penggunaan. Silakan login untuk melanjutkan.
+    </p>
+    <button onclick="window.location.href='{{ url_for('login')}}'">Login</button>
+  </div>
+</div>
 
-  sendButton.addEventListener("click", () => {
-    const userMessage = userInput.value.trim();
+  <script>
+    const userInput = document.getElementById("user-input");
+    const sendButton = document.getElementById("send-button");
+    const chatboxBody = document.getElementById("chatbox-body");
 
-    if (userMessage) {
-      // Tampilkan pesan pengguna di chatbox
-      const userMessageElement = document.createElement("div");
-      userMessageElement.classList.add("message", "user");
-      userMessageElement.textContent = userMessage;
-      chatboxBody.appendChild(userMessageElement);
-      userInput.value = "";
+    const modal = document.getElementById("myModal");
+    const span = document.getElementsByClassName("close")[0]
 
-      chatboxBody.scrollTop = chatboxBody.scrollHeight;
+    sendButton.addEventListener("click", () => {
+      const userMessage = userInput.value.trim();
 
-      // Placeholder respons bot
-      const botMessageElement = document.createElement("div");
-      botMessageElement.classList.add("message", "bot");
-      botMessageElement.textContent = "Bot sedang mengetik...";
-      chatboxBody.appendChild(botMessageElement);
-      chatboxBody.scrollTop = chatboxBody.scrollHeight;
+      if (userMessage) {
+        // Tampilkan pesan pengguna di chatbox
+        const userMessageElement = document.createElement("div");
+        userMessageElement.classList.add("message", "user");
+        userMessageElement.textContent = userMessage;
+        chatboxBody.appendChild(userMessageElement);
+        userInput.value = "";
 
-      // Kirim pesan ke backend
-      fetch("/chatbot", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ message: userMessage }),
-      })
-        .then((response) => {
-          if (response.status === 403) {
-            throw new Error("Anda telah mencapai batas penggunaan. Silakan login untuk melanjutkan.");
-          }
-          if (!response.ok) {
-            throw new Error("Terjadi kesalahan. Silakan coba lagi.");
-          }
-          return response.json();
+        chatboxBody.scrollTop = chatboxBody.scrollHeight;
+
+        // Placeholder respons bot
+        const botMessageElement = document.createElement("div");
+        botMessageElement.classList.add("message", "bot");
+        botMessageElement.textContent = "Bot sedang mengetik...";
+        chatboxBody.appendChild(botMessageElement);
+        chatboxBody.scrollTop = chatboxBody.scrollHeight;
+
+        // Kirim pesan ke backend
+        fetch("/chatbot", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ message: userMessage }),
         })
-        .then((data) => {
-          botMessageElement.textContent = data.response;
+          .then((response) => {
+            if (response.status === 403) {
+              throw new Error(
+                "Anda telah mencapai batas penggunaan. Silakan login untuk melanjutkan."
+              );
+            }
+            if (!response.ok) {
+              throw new Error("Terjadi kesalahan. Silakan coba lagi.");
+            }
+            return response.json();
+          })
+          .then((data) => {
+            botMessageElement.textContent = data.response;
 
-          // Tambahkan fitur copy/like/dislike
-          const iconContainer = document.createElement("div");
-          iconContainer.classList.add("bot-icons");
+            // Tambahkan fitur copy/like/dislike
+            const iconContainer = document.createElement("div");
+            iconContainer.classList.add("bot-icons");
 
-          const copyIcon = document.createElement("i");
-          copyIcon.classList.add("fas", "fa-copy", "icon", "copy-icon");
-          copyIcon.title = "Copy";
-          copyIcon.addEventListener("click", () => {
-            navigator.clipboard.writeText(botMessageElement.textContent).then(() => {
-              alert("Teks berhasil disalin!");
+            const copyIcon = document.createElement("i");
+            copyIcon.classList.add("fas", "fa-copy", "icon", "copy-icon");
+            copyIcon.title = "Copy";
+            copyIcon.addEventListener("click", () => {
+              navigator.clipboard
+                .writeText(botMessageElement.textContent)
+                .then(() => {
+                  alert("Teks berhasil disalin!");
+                });
             });
+
+            const likeIcon = document.createElement("i");
+            likeIcon.classList.add("fas", "fa-thumbs-up", "icon", "like-icon");
+            likeIcon.title = "Like";
+            likeIcon.addEventListener("click", () => {
+              alert("Terima kasih atas umpan balik Anda!");
+            });
+
+            const dislikeIcon = document.createElement("i");
+            dislikeIcon.classList.add(
+              "fas",
+              "fa-thumbs-down",
+              "icon",
+              "dislike-icon"
+            );
+            dislikeIcon.title = "Dislike";
+            dislikeIcon.addEventListener("click", () => {
+              alert("Kami akan memperbaiki layanan kami.");
+            });
+
+            iconContainer.appendChild(copyIcon);
+            iconContainer.appendChild(likeIcon);
+            iconContainer.appendChild(dislikeIcon);
+
+            botMessageElement.appendChild(iconContainer);
+
+            chatboxBody.scrollTop = chatboxBody.scrollHeight;
+          })
+          .catch((error) => {
+            botMessageElement.textContent = error.message;
+
+            if(error.message.includes("batas_penggunaan")){
+              modal.style.display="block";
+            }
           });
+      }
+    });
 
-          const likeIcon = document.createElement("i");
-          likeIcon.classList.add("fas", "fa-thumbs-up", "icon", "like-icon");
-          likeIcon.title = "Like";
-          likeIcon.addEventListener("click", () => {
-            alert("Terima kasih atas umpan balik Anda!");
-          });
+    userInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        sendButton.click();
+      }
+    });
 
-          const dislikeIcon = document.createElement("i");
-          dislikeIcon.classList.add("fas", "fa-thumbs-down", "icon", "dislike-icon");
-          dislikeIcon.title = "Dislike";
-          dislikeIcon.addEventListener("click", () => {
-            alert("Kami akan memperbaiki layanan kami.");
-          });
-
-          iconContainer.appendChild(copyIcon);
-          iconContainer.appendChild(likeIcon);
-          iconContainer.appendChild(dislikeIcon);
-
-          botMessageElement.appendChild(iconContainer);
-
-          chatboxBody.scrollTop = chatboxBody.scrollHeight;
-        })
-        .catch((error) => {
-          botMessageElement.textContent = error.message;
-        });
+    span.onclick = function(){
+      modal.style.display = "none";
     }
-  });
 
-  userInput.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      sendButton.click();
+    window.onclick = function(event){
+      if(event.target == modal){
+        modal.style.display = "none";
+      }
     }
-  });
-</script>
-{% endblock %}
+  </script>
 
+  {% endblock %}
+</div>
