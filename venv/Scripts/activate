@@ -40,12 +40,12 @@ case "$(uname)" in
     CYGWIN*|MSYS*)
         # transform D:\path\to\venv to /d/path/to/venv on MSYS
         # and to /cygdrive/d/path/to/venv on Cygwin
-        VIRTUAL_ENV=$(cygpath "D:\capstone annisa\Project_Capstone_AWS_CyperMind\venv")
+        VIRTUAL_ENV=$(cygpath "D:\XProject-capstone-AWS\XProject-capstone-AWS\Project-capstone-AWS\venv")
         export VIRTUAL_ENV
         ;;
     *)
         # use the path as-is
-        export VIRTUAL_ENV="D:\capstone annisa\Project_Capstone_AWS_CyperMind\venv"
+        export VIRTUAL_ENV="D:\XProject-capstone-AWS\XProject-capstone-AWS\Project-capstone-AWS\venv"
         ;;
 esac
 

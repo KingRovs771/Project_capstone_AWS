@@ -1,0 +1,67 @@
+[33mcommit cfb692105e59c906fb2445144b3fb397d6e7d0fa[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: annisa <annisanurqoriah12@gmail.com>
+Date:   Sun Dec 15 07:05:50 2024 +0700
+
+    menghubungkan contact dengan dynamodb
+
+[33mcommit 569dbcc2b461a109e4c9c31bd7e06fa089dc05e2[m
+Author: Jidan Putra Pratama <Jida22123ti@student.nurulfikri.ac.id>
+Date:   Wed Dec 4 23:53:22 2024 +0700
+
+    Menambahkan fitur kirim email di contact.html
+
+[33mcommit f42b3cdc5b71af09b8135b3963d2406aad3acf34[m
+Merge: f395980 0601a2f
+Author: annisa <annisanurqoriah12@gmail.com>
+Date:   Wed Dec 4 23:12:40 2024 +0700
+
+    Selesaikan konflik merge
+
+[33mcommit f395980578179116f312b953058e0569a0433be1[m
+Author: annisa <annisanurqoriah12@gmail.com>
+Date:   Wed Dec 4 23:05:00 2024 +0700
+
+    mengubah file chatbot.json
+
+[33mcommit 0601a2f404026bb9120251fff822bc0761b5e609[m
+Author: Jidan Putra Pratama <Jida22123ti@student.nurulfikri.ac.id>
+Date:   Wed Dec 4 22:47:50 2024 +0700
+
+    Mengubah key pada file json
+
+[33mcommit 0ef70e6212ef2cbf1219f2750569fbcee3eee358[m
+Author: annisa <annisanurqoriah12@gmail.com>
+Date:   Wed Dec 4 10:21:25 2024 +0700
+
+    menghapus file sampah
+
+[33mcommit 20ff1692770c9ce185716dcfab556df6b400a3d1[m
+Merge: 71fc0b1 1343b9b
+Author: annisa <annisanurqoriah12@gmail.com>
+Date:   Wed Dec 4 10:12:26 2024 +0700
+
+    menambahkan berita di index.html
+
+[33mcommit 71fc0b1d821dc71c60547fedbbd71f77a5243da2[m
+Author: annisa <annisanurqoriah12@gmail.com>
+Date:   Wed Dec 4 09:43:39 2024 +0700
+
+    menambahkan deskripsi index.html
+
+[33mcommit 1343b9be11d61b994bdc5d7229c09ec21be27557[m
+Author: Jidan Putra Pratama <Jida22123ti@student.nurulfikri.ac.id>
+Date:   Wed Dec 4 09:30:05 2024 +0700
+
+    Menambahkan deskripsi
+
+[33mcommit 8d049f2fadb9281387cb5d810adce659c893e7f4[m
+Author: Jidan Putra Pratama <Jida22123ti@student.nurulfikri.ac.id>
+Date:   Tue Dec 3 11:01:27 2024 +0700
+
+    menghapus file panduan.txt
+
+[33mcommit c1e2287122507290d02f62f3d8086246ff7b5a8a[m
+Author: Jidan Putra Pratama <Jida22123ti@student.nurulfikri.ac.id>
+Date:   Tue Dec 3 10:45:29 2024 +0700
+
+    Menambahkan Folder Limitation
