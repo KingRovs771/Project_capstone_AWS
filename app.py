@@ -269,32 +269,31 @@ def chatbot():
     
     if not access_granted : 
         if request.method == 'POST':
-            return jsonify({"message": "Anda telah mencapai batas penggunaan. Silakan login untuk melanjutkan."}), 403
-        return render_template("login.html", username=username)
+            return jsonify({"message": "Anda telah mencapai batas penggunaan. Silakan login untuk melanjutkan.", "redirect":url_for('login')}), 403
     
-    # if request.method == 'POST':
+    if request.method == 'POST':
         # Cek batas interaksi chatbot untuk tamu
         # if not user_logged_in and guest_chatbot_interactions >= 3:
         #     flash('Anda telah mencapai batas penggunaan chatbot. Silakan login untuk melanjutkan.', 'warning')
         #     return redirect(url_for('login'))
 
         # Ambil pesan pengguna dari form
-        # user_message = request.form['message'].strip()
-        # if user_message:
-        #     # Cari respons chatbot
-        #     response = chatbot_data.get(user_message.lower(), "Bot tidak mengerti pertanyaan Anda.")
+        user_message = request.form['message'].strip()
+        if user_message:
+            # Cari respons chatbot
+            response = chatbot_data.get(user_message.lower(), "Bot tidak mengerti pertanyaan Anda.")
             
-        #     # Simpan log interaksi ke tabel DynamoDB
-        #     chatbot_table = dynamodb.Table('chatbot')
-        #     chatbot_table.put_item(
-        #         Item={
-        #             'chatId': str(uuid.uuid4()),  # ID unik untuk setiap log
-        #             'userId': username,           # ID pengguna (guest jika tamu)
-        #             'message': user_message,     # Pesan pengguna
-        #             'response': response,        # Respons chatbot
-        #             'timestamp': int(time.time())  # Waktu interaksi dalam detik
-        #         }
-        #     )
+            # Simpan log interaksi ke tabel DynamoDB
+            chatbot_table = dynamodb.Table('chatbot')
+            chatbot_table.put_item(
+                Item={
+                    'chatId': str(uuid.uuid4()),  # ID unik untuk setiap log
+                    'userId': username,           # ID pengguna (guest jika tamu)
+                    'message': user_message,     # Pesan pengguna
+                    'response': response,        # Respons chatbot
+                    'timestamp': int(time.time())  # Waktu interaksi dalam detik
+                }
+            )
 
             # Tambahkan interaksi ke tamu jika belum login
             # if not user_logged_in:
@@ -302,13 +301,7 @@ def chatbot():
             #     update_guest_usage(guest_uploads, guest_chatbot_interactions)
 
             # Kembalikan respons chatbot
-            # return jsonify({'response': response})
-
-    if request.method == 'POST':
-        question = request.form['message']
-        data = load_chatbot_data()
-        answer = get_answer(question, data)
-        return render_template("chatbot.html", useranme=username, answer=answer)
+            return jsonify({'response': response})
     # Render halaman chatbot
     return render_template('chatbot.html', username=username)
 
