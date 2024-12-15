@@ -3,6 +3,7 @@ from pymongo import MongoClient
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from boto3.dynamodb.conditions import Key, Attr
+from botocore.exceptions import NoCredentialsError
 import os
 import json
 import boto3
@@ -20,10 +21,14 @@ app.config.from_object('config.Config')
 # uploads_collection = db['uploads']
 # guest_usage_collection = db['guest_usage']
 
+S3_BUCKET = 'upload-images-bucket-detection'
+S3_LOCATION = f'http://{S3_BUCKET}.s3.amazonaws.com/'
+
+s3_client = boto3.client('s3')
 
 dynamodb = boto3.resource('dynamodb',region_name='us-east-1')
 user_access_table = dynamodb.Table('user_access')
-
+uploads_colletion = dynamodb.Table('uploads')
 
 @app.route('/')
 def index():
@@ -325,35 +330,54 @@ def logout():
 
 @app.route('/detection', methods=['GET', 'POST'])
 def detection():
-    user_logged_in = 'user_id' in session
+    user_logged_in = 'username' in session
     guest_uploads, _ = get_guest_usage()
     modal_open = False
 
     if request.method == 'POST':
-        if not user_logged_in and guest_uploads >= 3:
-            flash('Please login or register to upload more images.', 'warning')
-            modal_open = True
-        else:
-            image = request.files['image']
-            if image:
-                filename = secure_filename(image.filename)
-                image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                image.save(image_path)
-
+        if not user_logged_in :
+            if not check_and_update_access('guest', 'upload'):
+                flash('Please login or register to upload more images.', 'warning')
+                modal_open = True
+            else :
+                guest_uploads += 1
+                update_guest_usage(guest_uploads, _)
+        else :
+            if not check_and_update_access(session.get('username'), 'upload'):
+                flash('Anda Telah Mencapai batas unggahan.', 'warning')
+                modal_open =True
+        if modal_open :
+            return render_template(
+                'detection-1.html',
+                user_logged_in=user_logged_in,
+                modal_open=modal_open,
+                guest_uploads=guest_uploads
+            )
+        image = request.files['image']
+        if image:
+            filename = secure_filename(image.filename)
+            try :
+                s3_client.upload_fileobj(
+                    image,
+                    S3_BUCKET,
+                    filename,
+                )
+                image_url = f'{S3_LOCATION}{filename}'
+                
                 upload_data = {
-                    'user_id': session.get('user_id'),
-                    'filename': filename
+                    'user_id': session.get('username') if user_logged_in else 'guest',
+                    'filename': filename,
+                    'url' : image_url,
+                    'upload_time' : int(time.time())
                 }
-                uploads_collection.insert_one(upload_data)
+                uploads_colletion.put_item(Item=upload_data)
 
                 session['uploaded_image'] = filename
 
-                if not user_logged_in:
-                    guest_uploads += 1
-                    update_guest_usage(guest_uploads, _)
-
-                flash('Image uploaded successfully!', 'success')
+                flash('Gambar berhasil di unggah', 'success')
                 return redirect(url_for('detection_result', user_logged_in=user_logged_in))
+            except NoCredentialsError :
+                flash('Kredensial tidak tersedia', 'danger')
 
     return render_template(
         'detection-1.html', 
